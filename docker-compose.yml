@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:5.0
+    container_name: blood_donation_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: blood_donation_backend
+    ports:
+      - "5000:5000"
+    environment:
+      MONGO_URI: mongodb://admin:password123@mongodb:27017/blood_donation?authSource=admin
+      JWT_SECRET: your_jwt_secret_key
+      NODE_ENV: development
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    command: npm start
+
+  donor-portal:
+    build:
+      context: ./donor-portal
+      dockerfile: Dockerfile
+    container_name: blood_donation_donor_portal
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+
+  recipient-portal:
+    build:
+      context: ./recipient-portal
+      dockerfile: Dockerfile
+    container_name: blood_donation_recipient_portal
+    ports:
+      - "3002:3000"
+    depends_on:
+      - backend
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+
+  admin-dashboard:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+    container_name: blood_donation_admin_dashboard
+    ports:
+      - "3003:3000"
+    depends_on:
+      - backend
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+
+volumes:
+  mongodb_data:
